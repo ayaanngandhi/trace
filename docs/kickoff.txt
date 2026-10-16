@@ -1,0 +1,16 @@
+Read docs/SPEC.md in full, then docs/DESIGN.md in full. Those two files are the complete brief: obey both
+exactly. Build Trace as a purely client-side static site. There is no backend, no server, no build step, no
+bundler, and no npm dependency: plain ES modules loaded with a script type=module tag, plain CSS, zero
+node_modules. The user's files must never leave the browser.
+
+Work through the whole spec. Use node --test for the pure-logic tests with zero dependencies. There are
+test fixtures in tests/fixtures/. Verify each acceptance criterion yourself in a real browser and record
+the real observed output.
+
+COMMIT AND PUSH IN STAGES as the spec requires: the static shell and design tokens first, then the input
+paths, then each analyzer as it lands, then the report and authored content, then video, then the crop
+tool, then tests and docs. Each stage gets its own commit with a real descriptive message, and you push to
+origin main after each one. Do not produce one giant commit at the end. The repository is public, so the
+history should read as a sensible progression.
+
+Never run pkill or killall or any process-name pattern kill: this machine runs other live services.
