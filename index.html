@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trace, a client-side AI media provenance inspector</title>
+<meta name="description" content="Drop in an image or video and read every provenance signal the browser can see: signed C2PA content credentials, metadata fingerprints, invisible watermark structure and forensic signals. Nothing is uploaded.">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="6" y="4.5" width="12" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 4.5V3.5A1.5 1.5 0 0 1 10.5 2h3A1.5 1.5 0 0 1 15 3.5v1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 11h6M9 15h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h7l5 5v13H6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3v5h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="10" r="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 17l5-5 4 4 2.5-2.5L20 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5.5" width="12.5" height="13" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 10l5-3v10l-5-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 6h14a2 2 0 0 1 2 2v14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 4l-9 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5L21 20H3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9.5v5M12 17.2v.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 11v6M12 7.8v.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l9 9M17 17l2-2M15 19l2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 2.4 5.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 20v-5h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="index.html">
+      <span class="rule-dot" aria-hidden="true"></span>
+      <span class="wordmark">Trace</span>
+      <span class="sub">media provenance inspector</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="how.html">How it works</a>
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="tests.html">Tests</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+
+    <section class="hero" id="hero">
+      <p class="eyebrow">Client-side provenance inspection</p>
+      <h1>Read what a file says about where it came from.</h1>
+      <p class="lede">Trace looks for signed content credentials, generator metadata, invisible watermark structure and forensic traces. Everything runs in this tab. Your file is not uploaded, and there is no server to upload it to.</p>
+      <hr class="rule">
+    </section>
+
+    <section id="input-zone" aria-labelledby="input-heading">
+      <div class="dropzone" id="dropzone" tabindex="0" role="group" aria-labelledby="input-heading">
+        <h2 id="input-heading">Inspect a file</h2>
+        <p class="muted">Images and video, up to browser limits. The file never leaves this machine.</p>
+        <div class="btn-row" style="margin-top: var(--s3)">
+          <button class="btn btn-primary" type="button" id="pick-btn">
+            <svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>
+            Choose a file
+          </button>
+          <button class="btn" type="button" id="demo-btn">
+            <svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>
+            Load sample photo
+          </button>
+        </div>
+        <input type="file" id="file-input" accept="image/*,video/*" class="visually-hidden">
+        <ul class="methods" aria-label="Ways to add a file">
+          <li class="method">
+            <svg class="ic" aria-hidden="true"><use href="#i-upload"/></svg>
+            <h3>Drop a file</h3>
+            <p>Drag an image or video anywhere onto this panel, or onto the page.</p>
+          </li>
+          <li class="method">
+            <svg class="ic" aria-hidden="true"><use href="#i-clipboard"/></svg>
+            <h3>Paste from clipboard</h3>
+            <p>Copy an image, then press <kbd>Ctrl</kbd>+<kbd>V</kbd> (or <kbd>⌘</kbd>+<kbd>V</kbd>).</p>
+          </li>
+          <li class="method">
+            <svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>
+            <h3>Pick a file</h3>
+            <p>Use the button above to open a normal file chooser.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="status-zone" class="section hidden" aria-live="polite" aria-busy="false">
+      <div class="progress-rule" id="progress-rule" aria-hidden="true"><span></span></div>
+      <div id="status-text" class="muted small" style="margin-top: var(--s2)"></div>
+      <div id="skeleton" class="skeleton hidden" style="margin-top: var(--s5)" aria-hidden="true">
+        <div class="panel">
+          <div class="sk-line w-40"></div>
+          <div class="sk-line w-80"></div>
+          <div class="sk-line w-100"></div>
+          <div class="sk-block"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="error-zone" class="section hidden" aria-live="assertive"></section>
+
+    <section id="result-zone" class="section hidden">
+      <div id="verdict-zone"></div>
+      <div id="file-summary-zone" class="section"></div>
+      <div id="analyzers-zone" class="section"></div>
+      <div id="crop-zone" class="section hidden"></div>
+      <div id="beforeafter-zone" class="section hidden"></div>
+      <div id="findings-zone" class="section content"></div>
+    </section>
+
+    <section id="settings-zone" class="section" aria-labelledby="settings-heading">
+      <h2 id="settings-heading">SynthID check</h2>
+      <div class="panel">
+        <div class="panel-body">
+          <p id="synthid-setup" class="muted"></p>
+          <div class="lede-block" id="synthid-status-block"></div>
+          <details class="disclosure">
+            <summary>Configure a SynthID API key</summary>
+            <div style="padding: var(--s3) 0">
+              <p class="small muted">Only do this if your Google Cloud account has SynthID access. With a key set, the file you analyse is sent from this browser directly to Google's SynthID API. With no key, nothing leaves this browser.</p>
+              <label class="field">
+                <span>API key</span>
+                <input type="password" id="synthid-key" autocomplete="off" spellcheck="false" placeholder="AIza...">
+              </label>
+              <label class="field">
+                <span>Mock mode (testing only)</span>
+                <select id="synthid-mock">
+                  <option value="">Off (use the real API when a key is set)</option>
+                  <option value="watermarked_google_image">watermarked_google_image</option>
+                  <option value="not_watermarked_image">not_watermarked_image</option>
+                  <option value="abstained_low_resolution">abstained_low_resolution</option>
+                  <option value="abstained_low_quality">abstained_low_quality</option>
+                  <option value="abstained_empty_bytes">abstained_empty_bytes</option>
+                  <option value="abstained_filtered">abstained_filtered</option>
+                  <option value="abstained_low_fps">abstained_low_fps</option>
+                  <option value="abstained_possible_tampering">abstained_possible_tampering</option>
+                  <option value="blocked">blocked</option>
+                  <option value="error_500">error_500</option>
+                </select>
+              </label>
+              <div class="btn-row">
+                <button class="btn" type="button" id="synthid-save">Save key</button>
+                <button class="btn btn-quiet" type="button" id="synthid-clear">Clear key</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <div>
+      <p><strong>Trace</strong> is a static site. There is no backend, no build step and no tracking. Your file stays in this browser except when you deliberately configure a SynthID key.</p>
+    </div>
+    <nav aria-label="Footer">
+      <ul class="inline-list">
+        <li><a href="how.html">How it works</a></li>
+        <li><a href="terms.html">Terms of Service</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="tests.html">Tests</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

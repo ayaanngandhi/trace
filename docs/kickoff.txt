@@ -1,16 +1,15 @@
-Read docs/SPEC.md in full, then docs/DESIGN.md in full. Those two files are the complete brief: obey both
-exactly. Build Trace as a purely client-side static site. There is no backend, no server, no build step, no
-bundler, and no npm dependency: plain ES modules loaded with a script type=module tag, plain CSS, zero
-node_modules. The user's files must never leave the browser.
+Read docs/SPEC.md in full, then docs/DESIGN.md in full. Those two files are the complete brief, and the two rules at the top of SPEC.md are absolute.
 
-Work through the whole spec. Use node --test for the pure-logic tests with zero dependencies. There are
-test fixtures in tests/fixtures/. Verify each acceptance criterion yourself in a real browser and record
-the real observed output.
+RULE 1: the website is frontend only. No backend, no server, no build step, no bundler, no npm runtime dependency for the site. A backend exists only under selfhost/.
 
-COMMIT AND PUSH IN STAGES as the spec requires: the static shell and design tokens first, then the input
-paths, then each analyzer as it lands, then the report and authored content, then video, then the crop
-tool, then tests and docs. Each stage gets its own commit with a real descriptive message, and you push to
-origin main after each one. Do not produce one giant commit at the end. The repository is public, so the
-history should read as a sensible progression.
+RULE 2: do NOT write our own detection logic. Detection comes from the SynthID API and from signed C2PA manifests, and from nothing else. Do not add any DWT-DCT probe, FFT or spectral analysis, error level analysis, noise residual analysis, or visible-badge detection. If any of those exist from an earlier draft, delete them. Do not display any percentage, probability or score that an authoritative source did not return.
+
+There is an earlier stage of this build already in the tree: index.html, how.html, privacy.html, terms.html, css/style.css, css/fonts/, js/main.js and tools/. Keep what is good in it and rewrite whatever the new spec changes.
+
+Work through T1 to T8. Use the official C2PA browser library rather than hand-rolling anything, and vendor it into vendor/ (install it with npm in a scratch directory OUTSIDE the repo, copy only the runtime files the browser needs, commit them, and import from vendor/). Do not hand-write a CBOR decoder or a JUMBF parser. If the official library genuinely cannot run without a bundler, say so plainly in your report and in a code comment instead of silently replacing it with hand-rolled code.
+
+Use node --test with zero dependencies. Verify each acceptance criterion in a real browser and record the real observed output. tools/browser.mjs and the real Chrome on port 9222 are both available to you.
+
+COMMIT AND PUSH IN STAGES: shell and design tokens, input paths, the SynthID check, C2PA, metadata, the report and authored content, video, the crop tool, self-hosting, tests, docs. Each stage gets its own commit with a real descriptive message and you push to origin main after it. Do not produce one giant commit at the end. The repository is public.
 
 Never run pkill or killall or any process-name pattern kill: this machine runs other live services.

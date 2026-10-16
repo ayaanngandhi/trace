@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy, Trace</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><span class="rule-dot" aria-hidden="true"></span><span class="wordmark">Trace</span><span class="sub">media provenance inspector</span></a>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html">Inspect</a>
+      <a href="how.html">How it works</a>
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html" aria-current="page">Privacy</a>
+      <a href="tests.html">Tests</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap content">
+    <section class="hero">
+      <p class="eyebrow">Privacy Policy</p>
+      <h1>Your file stays in your browser, with one exception you control.</h1>
+      <p class="lede">Trace is a static site. It has no backend, no database and no analytics. This page states exactly when, and whether, a file leaves your machine.</p>
+      <hr class="rule">
+    </section>
+
+    <section>
+      <h2>The short version</h2>
+      <div class="callout">
+        <p>With no SynthID key configured, nothing you open or paste leaves your browser. Not the file, not its bytes, not a summary of it.</p>
+        <p>With a SynthID key configured, the file you analyse is sent from your browser directly to Google's SynthID API at <span class="mono">synthid.googleapis.com</span>. That is the only network request Trace can make, and it happens only when you have deliberately set a key.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What Trace does with your file</h2>
+      <p>When you drop, paste or pick a file, the browser reads it into memory and every check runs in this tab. Trace parses the bytes locally, uses canvas and video elements locally, and renders the result locally. None of that touches the network.</p>
+      <p>Trace does not store your file. It does not write it to disk, it does not keep a copy after you navigate away, and it does not send a hash, a thumbnail or a size anywhere.</p>
+    </section>
+
+    <section>
+      <h2>The one exception: the SynthID check</h2>
+      <p>Google's SynthID verification API is the only outbound network request in the codebase, and it is only called when you switch it on. The behaviour is:</p>
+      <ul>
+        <li><strong>No key set.</strong> Trace does not call the API at all. The panel reports the check as not configured, tells you that ordinary accounts cannot self-enable this API, and links you to Google's free public detector at <a href="https://synthid.com" target="_blank" rel="noopener noreferrer">synthid.com</a>. Nothing leaves your browser.</li>
+        <li><strong>Key set.</strong> Trace sends the raw file bytes as the request body to <span class="mono">https://synthid.googleapis.com/upload/v1:verifyContent</span>, with your key in the query string and the media content type in the header. Google's response is shown to you. Google's handling of that request is governed by Google's own terms and privacy policy, not by this one.</li>
+      </ul>
+      <p>The key you enter is held in your browser's local storage so it survives a reload. It is sent only to Google, as the API requires. Trace has no server that could receive it.</p>
+    </section>
+
+    <section>
+      <h2>Local storage</h2>
+      <p>Trace uses your browser's local storage for one thing: to remember a SynthID API key and your mock mode setting if you choose to enter them. Nothing else is stored. You can clear both with the Clear key button in the settings panel, or by clearing site data in your browser.</p>
+    </section>
+
+    <section>
+      <h2>No tracking, no third parties</h2>
+      <p>There are no analytics, no advertising, no cookies for tracking, and no third-party scripts. Fonts are served from this repository rather than a font CDN, so loading a page makes no request to any third party. The only external link that leaves the site is the one to <a href="https://synthid.com" target="_blank" rel="noopener noreferrer">synthid.com</a>, which opens only when you click it.</p>
+    </section>
+
+    <section>
+      <h2>Changes</h2>
+      <p>If the behaviour of this tool changes in a way that affects what leaves your browser, this page will state the new behaviour plainly. The current statement is simple: nothing leaves the browser unless you configure a SynthID key.</p>
+    </section>
+
+    <p class="muted small">Last updated 2026. Trace is provided under the MIT licence. See <a href="terms.html">Terms of Service</a>.</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <div><p><strong>Trace</strong> is a static site. There is no backend, no build step and no tracking.</p></div>
+    <nav aria-label="Footer"><ul class="inline-list">
+      <li><a href="index.html">Inspect</a></li>
+      <li><a href="terms.html">Terms of Service</a></li>
+      <li><a href="how.html">How it works</a></li>
+      <li><a href="tests.html">Tests</a></li>
+    </ul></nav>
+  </div>
+</footer>
+</body>
+</html>
