@@ -19,6 +19,15 @@ subresource integrity hash the library itself publishes. The vendored
 
     sha512-l5R2SWbu07MUf5BWcO9CtZtNK2R6o/ib4q+ca+AVbuijvMIPtnRDH9cDrhijRCTEdTzvIftBa15zEr5RT2n3Ww==
 
+## vendor/exifr
+
+From `exifr@7.1.3` (MIT), published at https://github.com/MikeKovarik/exifr.
+
+- `full.esm.mjs`: the complete ESM build. It reads EXIF, TIFF, XMP, IPTC, ICC and
+  PNG text chunks from the bytes in the browser. It has no imports, so it loads
+  as a plain ES module.
+- `LICENSE`: the library licence.
+
 ## vendor/highgain
 
 From `highgain@0.1.0` (ISC), a small worker RPC helper that `@contentauth/c2pa-web`
