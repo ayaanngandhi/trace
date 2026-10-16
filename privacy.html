@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy Policy, Trace</title>
+<meta name="description" content="Exactly when, and whether, a file leaves your browser when you use Trace.">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -34,8 +35,8 @@
     <section>
       <h2>The short version</h2>
       <div class="callout">
-        <p>With no SynthID key configured, nothing you open or paste leaves your browser. Not the file, not its bytes, not a summary of it.</p>
-        <p>With a SynthID key configured, the file you analyse is sent from your browser directly to Google's SynthID API at <span class="mono">synthid.googleapis.com</span>. That is the only network request Trace can make, and it happens only when you have deliberately set a key.</p>
+        <p><strong>With no SynthID key configured, nothing you open, paste or drop leaves your browser.</strong> Not the file, not its bytes, not a summary of it. Every check runs in the tab.</p>
+        <p><strong>With a SynthID key configured, the file is sent from your browser straight to Google</strong> at <span class="mono">synthid.googleapis.com</span> so the watermark can be read. That is the only outbound request Trace makes, and it happens only because you set a key.</p>
       </div>
     </section>
 
@@ -47,22 +48,27 @@
 
     <section>
       <h2>The one exception: the SynthID check</h2>
-      <p>Google's SynthID verification API is the only outbound network request in the codebase, and it is only called when you switch it on. The behaviour is:</p>
+      <p>Google's SynthID verification API is the only outbound network request in the codebase, and it is called only when you configure a key. The behaviour is:</p>
       <ul>
-        <li><strong>No key set.</strong> Trace does not call the API at all. The panel reports the check as not configured, tells you that ordinary accounts cannot self-enable this API, and links you to Google's free public detector at <a href="https://synthid.com" target="_blank" rel="noopener noreferrer">synthid.com</a>. Nothing leaves your browser.</li>
-        <li><strong>Key set.</strong> Trace sends the raw file bytes as the request body to <span class="mono">https://synthid.googleapis.com/upload/v1:verifyContent</span>, with your key in the query string and the media content type in the header. Google's response is shown to you. Google's handling of that request is governed by Google's own terms and privacy policy, not by this one.</li>
+        <li><strong>No key set.</strong> Trace does not call the API at all. The panel reports the check as <span class="mono">not_configured</span> and explains that a blank result means the check did not run, never that the file is clean. Nothing leaves your browser.</li>
+        <li><strong>Key set.</strong> Trace sends the raw file bytes as the request body to <span class="mono">https://synthid.googleapis.com/upload/v1:verifyContent</span>, with the key in the query string and the media content type in the header. Google's response is shown to you. Google's handling of that request is governed by Google's own terms and privacy policy, not by this one.</li>
       </ul>
-      <p>The key you enter is held in your browser's local storage so it survives a reload. It is sent only to Google, as the API requires. Trace has no server that could receive it.</p>
+      <p>The key you paste is held in your browser's local storage so it survives a reload. It is sent only to Google, as the API requires. Trace has no server that could receive it.</p>
+    </section>
+
+    <section>
+      <h2>If you self-host Trace</h2>
+      <p>The optional <span class="mono">selfhost/</span> server serves the same static files and can hold the SynthID key on the server instead of in the browser. When it advertises that option, the check is sent to that server's <span class="mono">/api/synthid</span> endpoint, which forwards the body to Google with the server-side key. The file still does not need to be stored: the server forwards the bytes and discards them, and it never logs file contents, request bodies or the key. If you use this option, the server's operator can in principle observe the request, so only self-host with a server you trust.</p>
     </section>
 
     <section>
       <h2>Local storage</h2>
-      <p>Trace uses your browser's local storage for one thing: to remember a SynthID API key and your mock mode setting if you choose to enter them. Nothing else is stored. You can clear both with the Clear key button in the settings panel, or by clearing site data in your browser.</p>
+      <p>Trace uses your browser's local storage for one thing: to remember the SynthID API key if you choose to enter one. Nothing else is stored. You can clear it with the Clear key button in the settings panel, or by clearing site data in your browser.</p>
     </section>
 
     <section>
       <h2>No tracking, no third parties</h2>
-      <p>There are no analytics, no advertising, no cookies for tracking, and no third-party scripts. Fonts are served from this repository rather than a font CDN, so loading a page makes no request to any third party. The only external link that leaves the site is the one to <a href="https://synthid.com" target="_blank" rel="noopener noreferrer">synthid.com</a>, which opens only when you click it.</p>
+      <p>There are no analytics, no advertising, no tracking cookies, and no third-party scripts. Fonts are served from this repository rather than a font CDN, and the C2PA library is vendored into this repository, so loading a page makes no request to any third party. The external links on this site open only when you click them.</p>
     </section>
 
     <section>

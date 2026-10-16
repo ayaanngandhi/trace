@@ -366,7 +366,7 @@ input[type="number"] { font-family: var(--font-mono); }
 .crop-stage img, .crop-stage video { display: block; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
 .crop-overlay { position: absolute; inset: 0; pointer-events: none; }
 .crop-shade { position: absolute; background: rgba(20, 22, 26, 0.55); }
-.crop-box { position: absolute; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(20,22,26,0.6); cursor: move; pointer-events: auto; }
+.crop-box { position: absolute; border: 1.5px solid #fff; outline: 1px solid rgba(20,22,26,0.6); cursor: move; pointer-events: auto; }
 .crop-box .crop-grid { position: absolute; inset: 0; pointer-events: none; }
 .crop-box .crop-grid::before, .crop-box .crop-grid::after { content: ""; position: absolute; background: rgba(255,255,255,0.5); }
 .crop-box .crop-grid::before { left: 33.33%; right: 33.33%; top: 0; bottom: 0; border-left: 1px solid rgba(255,255,255,0.4); border-right: 1px solid rgba(255,255,255,0.4); background: none; }

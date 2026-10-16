@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trace, a client-side AI media provenance inspector</title>
-<meta name="description" content="Drop in an image or video and read every provenance signal the browser can see: signed C2PA content credentials, metadata fingerprints, invisible watermark structure and forensic signals. Nothing is uploaded.">
+<title>Trace, a client-side media provenance inspector</title>
+<meta name="description" content="Drop in an image, audio file or video and read what authoritative sources report: a signed C2PA content credential, the SynthID watermark read through Google's API, and the provenance metadata the file carries. Nothing is uploaded.">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -18,6 +18,7 @@
     <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h7l5 5v13H6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3v5h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="10" r="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 17l5-5 4 4 2.5-2.5L20 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
     <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5.5" width="12.5" height="13" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 10l5-3v10l-5-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-audio" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4.5v15M16 7v10M20 10v4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
     <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 6h14a2 2 0 0 1 2 2v14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
     <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 4l-9 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
@@ -37,6 +38,7 @@
       <span class="sub">media provenance inspector</span>
     </a>
     <nav class="nav" aria-label="Primary">
+      <a href="index.html" aria-current="page">Inspect</a>
       <a href="how.html">How it works</a>
       <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
@@ -48,43 +50,39 @@
 <main id="main">
   <div class="wrap">
 
-    <section class="hero" id="hero">
+    <section class="hero">
       <p class="eyebrow">Client-side provenance inspection</p>
       <h1>Read what a file says about where it came from.</h1>
-      <p class="lede">Trace looks for signed content credentials, generator metadata, invisible watermark structure and forensic traces. Everything runs in this tab. Your file is not uploaded, and there is no server to upload it to.</p>
+      <p class="lede">Trace reports what authoritative sources say about a file: a signed C2PA content credential, the SynthID watermark read through Google's API, and the provenance metadata the file carries. Every check runs in this tab. Your file is not uploaded, and there is no server to upload it to.</p>
       <hr class="rule">
     </section>
 
     <section id="input-zone" aria-labelledby="input-heading">
       <div class="dropzone" id="dropzone" tabindex="0" role="group" aria-labelledby="input-heading">
         <h2 id="input-heading">Inspect a file</h2>
-        <p class="muted">Images and video, up to browser limits. The file never leaves this machine.</p>
+        <p class="muted">Images up to 8 MB. Audio and video up to 100 MB. The file never leaves this machine.</p>
         <div class="btn-row" style="margin-top: var(--s3)">
           <button class="btn btn-primary" type="button" id="pick-btn">
             <svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>
             Choose a file
           </button>
-          <button class="btn" type="button" id="demo-btn">
-            <svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>
-            Load sample photo
-          </button>
         </div>
-        <input type="file" id="file-input" accept="image/*,video/*" class="visually-hidden">
+        <input type="file" id="file-input" accept="image/*,audio/*,video/*" class="visually-hidden">
         <ul class="methods" aria-label="Ways to add a file">
           <li class="method">
             <svg class="ic" aria-hidden="true"><use href="#i-upload"/></svg>
             <h3>Drop a file</h3>
-            <p>Drag an image or video anywhere onto this panel, or onto the page.</p>
+            <p>Drag an image, audio file or video onto this panel, or anywhere on the page.</p>
           </li>
           <li class="method">
             <svg class="ic" aria-hidden="true"><use href="#i-clipboard"/></svg>
-            <h3>Paste from clipboard</h3>
-            <p>Copy an image, then press <kbd>Ctrl</kbd>+<kbd>V</kbd> (or <kbd>⌘</kbd>+<kbd>V</kbd>).</p>
+            <h3>Paste from the clipboard</h3>
+            <p>Copy an image or video, then press <kbd>Ctrl</kbd>+<kbd>V</kbd> or <kbd>⌘</kbd>+<kbd>V</kbd>.</p>
           </li>
           <li class="method">
             <svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>
             <h3>Pick a file</h3>
-            <p>Use the button above to open a normal file chooser.</p>
+            <p>Use the button above to open the file chooser.</p>
           </li>
         </ul>
       </div>
@@ -118,36 +116,23 @@
       <h2 id="settings-heading">SynthID check</h2>
       <div class="panel">
         <div class="panel-body">
-          <p id="synthid-setup" class="muted"></p>
-          <div class="lede-block" id="synthid-status-block"></div>
-          <details class="disclosure">
+          <div id="synthid-status-block" class="lede-block"></div>
+          <details class="disclosure" id="key-details">
             <summary>Configure a SynthID API key</summary>
             <div style="padding: var(--s3) 0">
-              <p class="small muted">Only do this if your Google Cloud account has SynthID access. With a key set, the file you analyse is sent from this browser directly to Google's SynthID API. With no key, nothing leaves this browser.</p>
-              <label class="field">
+              <p class="small muted">With a key set, the file you analyse is sent from this browser straight to Google's SynthID API. With no key, nothing leaves this browser. The key is stored only in this browser's local storage.</p>
+              <label class="field" for="synthid-key">
                 <span>API key</span>
                 <input type="password" id="synthid-key" autocomplete="off" spellcheck="false" placeholder="AIza...">
               </label>
-              <label class="field">
-                <span>Mock mode (testing only)</span>
-                <select id="synthid-mock">
-                  <option value="">Off (use the real API when a key is set)</option>
-                  <option value="watermarked_google_image">watermarked_google_image</option>
-                  <option value="not_watermarked_image">not_watermarked_image</option>
-                  <option value="abstained_low_resolution">abstained_low_resolution</option>
-                  <option value="abstained_low_quality">abstained_low_quality</option>
-                  <option value="abstained_empty_bytes">abstained_empty_bytes</option>
-                  <option value="abstained_filtered">abstained_filtered</option>
-                  <option value="abstained_low_fps">abstained_low_fps</option>
-                  <option value="abstained_possible_tampering">abstained_possible_tampering</option>
-                  <option value="blocked">blocked</option>
-                  <option value="error_500">error_500</option>
-                </select>
-              </label>
               <div class="btn-row">
-                <button class="btn" type="button" id="synthid-save">Save key</button>
-                <button class="btn btn-quiet" type="button" id="synthid-clear">Clear key</button>
+                <button class="btn btn-primary" type="button" id="synthid-save">Save key</button>
+                <button class="btn btn-quiet" type="button" id="synthid-clear">
+                  <svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>
+                  Clear key
+                </button>
               </div>
+              <p class="small muted" style="margin-top: var(--s3)">The API must be enabled for the project that owns the key. Enable it on the <a href="https://console.cloud.google.com/apis/library/synthid.googleapis.com" target="_blank" rel="noopener noreferrer">SynthID API page<svg class="ic" aria-hidden="true" style="width:12px;height:12px;vertical-align:-1px;margin-left:3px"><use href="#i-external"/></svg></a>, then create a key under <a href="https://cloud.google.com/docs/authentication/api-keys" target="_blank" rel="noopener noreferrer">Credentials</a>.</p>
             </div>
           </details>
         </div>
@@ -173,6 +158,25 @@
   </div>
 </footer>
 
-<script type="module" src="js/main.js"></script>
+<script type="module">
+  // Browsers refuse to fetch external ES modules from a file:// origin, so the
+  // app is imported only over http(s). Opened directly from disk the page still
+  // renders as a static document with no console errors; the interactive checks
+  // need a static server or the optional selfhost server.
+  document.documentElement.classList.add('js');
+  if (location.protocol === 'file:') {
+    document.documentElement.classList.add('no-module-host');
+  } else {
+    import('./js/main.js').catch((error) => {
+      document.documentElement.classList.add('no-module-host');
+      const zone = document.getElementById('status-zone');
+      const text = document.getElementById('status-text');
+      if (zone && text) {
+        zone.classList.remove('hidden');
+        text.textContent = 'Trace could not start: ' + (error && error.message ? error.message : 'module load failed') + '. Serve this folder over http and reload.';
+      }
+    });
+  }
+</script>
 </body>
 </html>

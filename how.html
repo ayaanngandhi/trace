@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How Trace works, and the limits of each signal</title>
+<title>How Trace works, and the limits of each check</title>
+<meta name="description" content="What Trace checks, what each result does and does not prove, and how to get a clearer reading from the SynthID API and C2PA content credentials.">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -26,86 +27,114 @@
   <div class="wrap content">
     <section class="hero">
       <p class="eyebrow">Method and limits</p>
-      <h1>How Trace works, and what each signal can and cannot tell you.</h1>
-      <p class="lede">Trace reports signals. A signal is not a verdict about whether a picture is true, and the absence of a signal is never a clean bill of health. This page explains what each check measures, where it fails, and how to get a clearer reading.</p>
+      <h1>How Trace works, and what each result can and cannot tell you.</h1>
+      <p class="lede">Trace reports what authoritative sources say about a file. It does not score the file, and the absence of a signal is never a clean bill of health. This page explains what each check reads, where it fails, and how to get a clearer reading.</p>
       <hr class="rule">
     </section>
 
     <section>
-      <h2>The order of evidence</h2>
-      <p>Not all signals are equal. A signed content credential from a known producer is vendor-authoritative evidence that a manifest exists and names its producer. A statistical probe over pixels is a heuristic, and heuristics produce false positives on ordinary photographs.</p>
-      <p>Trace sorts what it finds into a small set of verdicts. The verdict is a summary of the evidence present in the file you supplied. It is not a statement that the media is authentic, and it is not a statement that the media is false.</p>
+      <h2>What Trace checks</h2>
+      <p>There are two authoritative sources, and one that is read and reported but never trusted as proof.</p>
+      <ol>
+        <li><strong>The SynthID check.</strong> Google's official verification API reads the invisible watermark that some generators embed. This is a live vendor verdict.</li>
+        <li><strong>C2PA content credentials.</strong> A signed manifest embedded in the file, read and its signature validated with the official C2PA library.</li>
+        <li><strong>Metadata.</strong> EXIF, XMP and IPTC blocks are parsed and their generator markers reported. Metadata is trivially strippable and forgeable, so it is never treated as proof.</li>
+      </ol>
+      <p>That is the whole list. There is no statistical probe, no spectral or frequency analysis, no error level analysis, no noise estimate, and no badge scan. Those approaches guess, and a guess dressed as a number is worse than no answer. Every result Trace shows comes from one of the three sources above, or states that a check did not run.</p>
       <div class="callout">
-        <p>Absence of provenance is the normal case, not a suspicious one. Most images in circulation were never signed, and most re-encodes strip whatever was there.</p>
+        <p>Absence of provenance is the normal case, not a suspicious one. Most media in circulation was never signed and never watermarked, and most re-encodes strip whatever was there.</p>
       </div>
-    </section>
-
-    <section>
-      <h2>C2PA and Content Credentials</h2>
-      <p>C2PA is a standard for embedding a signed manifest inside a media file. The manifest can name the tool that produced the file, the signer, and, in the IPTC <span class="mono">digitalSourceType</span> field, the kind of process that made the content. Trace reads the manifest directly from the bytes. It locates the manifest store in JPEG, PNG, WebP and MP4 containers, expands the JUMBF boxes, and decodes the CBOR payload with a decoder written for this tool.</p>
-      <p>Trace can read the manifest and report its contents. It cannot verify the cryptographic signature, because that needs a full COSE and X.509 stack that pure browser JavaScript does not provide here. When a manifest is present and parses, the report says so and says plainly that the signature was not verified in the browser. Treat an unverified manifest as a claim, not a proof.</p>
-      <h3>The <span class="mono">digitalSourceType</span> trap</h3>
-      <p>This field is the most misread part of the whole subject. Four of its values look similar and mean very different things:</p>
-      <div class="table-scroll">
-        <table class="data">
-          <caption class="visually-hidden">The digitalSourceType values and what each contributes</caption>
-          <thead><tr><th>Value</th><th>Means</th><th>Weight</th></tr></thead>
-          <tbody>
-            <tr><td class="mono">trainedAlgorithmicMedia</td><td>Made by a trained model</td><td>Strong AI evidence</td></tr>
-            <tr><td class="mono">compositeWithTrainedAlgorithmicMedia</td><td>A composite that includes AI content</td><td>Strong AI evidence</td></tr>
-            <tr><td class="mono">algorithmicMedia</td><td>Rendered by an algorithm, such as procedural art, CGI or a gradient</td><td>Not AI</td></tr>
-            <tr><td class="mono">compositeSynthetic</td><td>A composite with synthetic content</td><td>Weak; describe only</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>A file whose only evidence is <span class="mono">algorithmicMedia</span> is not reported as AI generated, because that value means an algorithm rendered it and says nothing about a trained model. Any unknown value is stored exactly as written and reported as inconclusive rather than guessed at.</p>
-    </section>
-
-    <section>
-      <h2>Metadata and generator fingerprints</h2>
-      <p>Cameras, editors and generators leave text in EXIF, XMP and IPTC blocks. Trace parses those blocks directly from the bytes and matches known fingerprints, including the Stable Diffusion <span class="mono">parameters</span> key, ComfyUI <span class="mono">prompt</span> and <span class="mono">workflow</span> keys, software tags naming Google, Gemini, Imagen, DALL-E, Firefly and Midjourney, the XMP <span class="mono">CreatorTool</span> field, and the IPTC <span class="mono">DigitalSourceType</span> field.</p>
-      <p>The blind spot is large. Google's Gemini API writes a pixel watermark and writes no C2PA and no IPTC at all, so metadata checks read clean on those files. Screenshots and social re-uploads remove metadata entirely. A clean metadata read means the file carries no fingerprint Trace recognises. It does not mean the file is human made.</p>
-    </section>
-
-    <section>
-      <h2>Invisible watermark structure</h2>
-      <p>Some generators perturb the frequency content of an image to carry a watermark. Trace computes a Haar wavelet decomposition and an 8 by 8 block DCT over the luminance channel, then measures the coefficient-difference statistics those schemes disturb, and reports a score with an interpretation band.</p>
-      <p>This is a statistical probe, not a decode. Trace never claims to have read a watermark, because it cannot. The score can rise on any image with strong periodic structure. Strong compression, resizing and cropping all flatten the signal, so a low score proves nothing.</p>
-    </section>
-
-    <section>
-      <h2>Forensic signals</h2>
-      <p>Trace runs three independent heuristics. Error level analysis re-encodes the image through a canvas at a known quality and measures the per-region difference. A spectral grid search runs a radix-2 FFT and looks for the periodic peaks that some generator decoders leave behind. A noise residual estimate measures high-frequency sensor noise.</p>
-      <p>All three are heuristics, and false positives are common on screenshots, re-encoded images and heavily processed genuine photographs. The absence of sensor noise is weak evidence, because denoising and re-encoding remove it too. Treat each as a prompt to look closer, never as a conclusion.</p>
-    </section>
-
-    <section>
-      <h2>Visible marks</h2>
-      <p>Trace performs a best-effort scan of the corners and the lower-right region for the on-image badges placed by Gemini, Sora, Veo, Kling, Seedance, Doubao and Hailuo. These badges are easy to crop and easy to counterfeit, so their presence is a hint and their absence carries no weight. When the scan cannot run, it reports that it was skipped rather than guessing.</p>
     </section>
 
     <section>
       <h2>The SynthID check</h2>
-      <p>SynthID is Google's watermark for AI generated images, audio and video. Google runs an official verification API at <span class="mono">synthid.googleapis.com</span>, and Trace implements the call. The honest limitation is access: the API is restricted to Google Cloud accounts with SynthID access, granted through Gemini Enterprise and partner programmes, and it cannot be enabled from the public API library. An ordinary project key is rejected.</p>
-      <p>Because of that, when no key is set, or when the service blocks the request, Trace reports the check as not configured and links you to <a href="https://synthid.com" target="_blank" rel="noopener noreferrer">synthid.com</a>, Google's free public SynthID Detector, which runs the same authoritative check for images, audio and video. The same check is also available inside the Gemini app. A blank SynthID result means the check did not run. It never means clean.</p>
+      <p>SynthID is Google's watermark for AI generated images, audio and video. Google runs an official verification service at <span class="mono">synthid.googleapis.com/upload/v1:verifyContent</span>. Trace sends the raw file bytes to that service and reports the response exactly as returned.</p>
+      <p>The service accepts an image up to 8 MB, and audio or video up to 100 MB. It returns a decision: watermarked, not watermarked, an abstention, or unspecified. When the media is watermarked it may also return the producer, and for images a confidence band. It reports how much of the content carries the watermark, as a prevalence band.</p>
+      <p><strong>Confidence is an image-only field.</strong> A video verdict carries no confidence, so Trace does not invent one.</p>
+      <p>The service needs an API key. The key comes from enabling the SynthID API for a Google Cloud project at <a href="https://console.cloud.google.com/apis/library/synthid.googleapis.com" target="_blank" rel="noopener noreferrer">the SynthID API page</a>, then creating an API key. The check runs directly from your browser to Google. With no key, the check does not run at all, and Trace reports it as <span class="mono">not_configured</span>, which is not the same as a clean result.</p>
+      <p>If the key's project does not have the API enabled, Google returns <span class="mono">API_KEY_SERVICE_BLOCKED</span>. That is an account and project setting, not a limit of the API itself, and the fix is to enable the API for the right project.</p>
+
+      <h3>An abstention is not a verdict</h3>
+      <p>When the service abstains it could not reach a decision. Each reason says why:</p>
+      <div class="table-scroll">
+        <table class="data">
+          <caption class="visually-hidden">Abstention reasons and what each one means</caption>
+          <thead><tr><th>Reason</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">EMPTY_BYTES</td><td>The payload was empty, so there was nothing to read.</td></tr>
+            <tr><td class="mono">LOW_RESOLUTION</td><td>The content was too small to carry or reveal a reliable watermark.</td></tr>
+            <tr><td class="mono">FILTERED</td><td>Processing or filtering removed the signal the service looks for.</td></tr>
+            <tr><td class="mono">LOW_FPS</td><td>Too few frames were available to judge a video.</td></tr>
+            <tr><td class="mono">LOW_QUALITY</td><td>Compression or quality loss obscured the watermark.</td></tr>
+            <tr><td class="mono">POSSIBLE_TAMPERING</td><td>The content showed signs of modification that prevent a confident reading.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>An abstention is the absence of a verdict. It never means the file is clean.</p>
+
+      <h3>Prevalence</h3>
+      <p>For watermarked media the service reports the share of the content that carries the watermark, as a band: none, low (under 25%), medium (25 to 50%), or high (over 50%). For a video this is reported per frame and for audio per sample range. A low prevalence often means only part of the file was AI generated, so trimming to the relevant segment gives a clearer reading.</p>
     </section>
 
     <section>
-      <h2>How to get a clearer reading</h2>
-      <p>The mechanisms above suggest practical steps.</p>
+      <h2>C2PA content credentials</h2>
+      <p>C2PA is a standard for embedding a signed manifest inside a media file. The manifest can name the tool that produced the file, the signer, and the assertions that describe how the content was made. Trace reads the manifest with the official C2PA library and validates its signature, so a manifest it reports as found is one whose signature checked out.</p>
+      <p>Trace reports the claim generator, the signer's issuer and common name, the signing time and algorithm, and the assertion labels. It reads the provenance declaration from the <span class="mono">c2pa.actions</span> and <span class="mono">c2pa.actions.v2</span> assertions.</p>
+
+      <h3>The <span class="mono">digitalSourceType</span> distinction</h3>
+      <p>This field is the part of C2PA most often misread. Four of its values look alike and mean different things:</p>
+      <div class="table-scroll">
+        <table class="data">
+          <caption class="visually-hidden">The digitalSourceType values and what each contributes</caption>
+          <thead><tr><th>Value</th><th>Means</th><th>Contribution</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">trainedAlgorithmicMedia</td><td>Made by a trained model</td><td>AI: strong evidence</td></tr>
+            <tr><td class="mono">compositeWithTrainedAlgorithmicMedia</td><td>A composite that includes AI content</td><td>AI: strong evidence</td></tr>
+            <tr><td class="mono">algorithmicMedia</td><td>Rendered by an algorithm, such as procedural art or CGI</td><td>Not AI</td></tr>
+            <tr><td class="mono">compositeSynthetic</td><td>A composite with synthetic content</td><td>Describe only; do not claim AI</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A file whose only evidence is <span class="mono">algorithmicMedia</span> is not reported as AI generated, because that value describes an algorithm rendering content and says nothing about a trained model. An unrecognised value is kept exactly as written and reported as inconclusive rather than guessed at.</p>
+    </section>
+
+    <section>
+      <h2>Metadata, and its blind spot</h2>
+      <p>Cameras, editors and generators leave text in EXIF, XMP and IPTC blocks. Trace parses those blocks and reports the raw values it finds, along with any generator marker it recognises: the Stable Diffusion <span class="mono">parameters</span> key, the ComfyUI <span class="mono">prompt</span> and <span class="mono">workflow</span> keys, software tags naming Google, Gemini, Imagen, DALL-E or Firefly, the XMP <span class="mono">CreatorTool</span>, and the IPTC <span class="mono">DigitalSourceType</span>.</p>
+      <p>Trace reports a match. It does not score it. Metadata is easy to strip and easy to forge, so a match is never proof and a lack of matches is never reassurance.</p>
+      <div class="callout">
+        <p>Google's Gemini <strong>API</strong> embeds its pixel watermark but writes no C2PA and no IPTC at all, so metadata checks read clean on those files. Any screenshot or social re-upload strips metadata entirely. A clean metadata read means the file carries no marker Trace recognises, and nothing more.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Why no watermark does not mean the media is real</h2>
+      <p>This is the most widely misunderstood point in the whole subject, so Trace states it plainly.</p>
       <ul>
-        <li>Upload the original file rather than a screenshot. A screenshot destroys metadata and repaints the pixels, which erases or distorts a pixel watermark.</li>
-        <li>Do not downscale. Low resolution triggers an abstention from the SynthID service, which is the absence of a verdict, not a clean result.</li>
-        <li>Stay within the size limits. The SynthID service accepts images up to 8 MB and audio and video up to 100 MB. If a file is larger, crop rather than let the check fail.</li>
-        <li>Crop to the content, not into it. Remove screen chrome, social overlays, captions, letterbox bars, meme text, borders and other apps' watermarks, because they are not part of the generated frame and they dilute the signal. Keep the whole generated frame.</li>
-        <li>For video, crop the bars, then trim to the segment that is actually AI generated. The service reports the share of frames that carry a watermark, so a clip that is part AI and part live action gives a mixed reading.</li>
-        <li>Keep enough frames to avoid the low frame rate abstention, and avoid re-encoding more than once. A re-encode can degrade exactly the watermark you are trying to check.</li>
+        <li><strong>Many generators embed nothing.</strong> Only some tools add a watermark at all. Open and self-hosted models such as Stable Diffusion, FLUX and Qwen, and most local pipelines, embed nothing, so there is nothing for any check to find.</li>
+        <li><strong>Ordinary handling destroys provenance metadata.</strong> A screenshot, a social re-upload, a messaging app and any re-encode strip C2PA and EXIF. While cropping and compression do not necessarily remove a pixel watermark, they do remove the metadata that might have named the tool.</li>
+        <li><strong>An abstention is not a clean result.</strong> When the service abstains it did not decide. Each abstention reason above is a reason a reading could not be made, not a statement that the content is genuine.</li>
+        <li><strong>If the SynthID check is not configured, nothing ran.</strong> A blank watermark result means the check did not execute, because no key was available. It never means the file passed.</li>
+        <li><strong>Watermark removal tools exist and are widely used.</strong> A stripped watermark looks identical to one that was never there. The absence of a watermark carries no information about how the media was made.</li>
       </ul>
     </section>
 
     <section>
+      <h2>How to get a clearer reading</h2>
+      <p>The mechanisms above point to practical steps.</p>
+      <ol>
+        <li><strong>Upload the original.</strong> A screenshot repaints the pixels and removes metadata, which erases or distorts exactly what the checks look for.</li>
+        <li><strong>Do not downscale.</strong> Low resolution is one of the reasons the SynthID service abstains, and an abstention is the absence of a verdict.</li>
+        <li><strong>Stay within the size limits.</strong> An image must be under 8 MB, and audio or video under 100 MB. If a file is larger, crop it rather than let the check fail.</li>
+        <li><strong>Remove anything that is not the content.</strong> Screen chrome, social overlays, captions, letterbox bars, meme text, borders and other apps' watermarks dilute the signal. Crop to the content, not into it, and keep the whole generated frame.</li>
+        <li><strong>For video, crop the bars and trim to the AI segment.</strong> The service reports the share of frames that carry a watermark, so a clip that is part AI and part live action gives a mixed reading.</li>
+        <li><strong>Keep enough frames and avoid re-encoding more than once.</strong> Too few frames triggers the low frame rate abstention, and each re-encode can degrade the very watermark you are trying to check.</li>
+      </ol>
+    </section>
+
+    <section>
       <h2>What Trace never does</h2>
-      <p>Trace does not describe a file as authentic, safe, verified real, human made, or not AI. There is no green all-clear state, because an absent watermark is not a pass. No accuracy percentage is shown for any heuristic, because none was measured.</p>
+      <p>Trace does not describe a file as authentic, safe, verified real, human made or not AI. There is no green all clear state, because an absent watermark is not a pass. It shows no percentage, probability or score that an authoritative source did not return, and it does not fold a check that never ran into a clean result.</p>
     </section>
 
   </div>
