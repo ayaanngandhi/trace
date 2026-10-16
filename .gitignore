@@ -3,3 +3,6 @@ node_modules/
 .DS_Store
 docs/opencode-*.log
 docs/screens/
+supervise.sh
+docs/kickoff.txt
+docs/session-id.txt
