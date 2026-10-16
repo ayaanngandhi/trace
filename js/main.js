@@ -1,10 +1,12 @@
 // Trace entry point. Wires the input paths, the settings panel and the analysis
 // pipeline. Every check runs locally or against a source the user configured.
 
-import { el, resetResult, setBusy, setStatus, showError, renderFileSummary, node } from './ui.js';
+import { el, resetResult, setBusy, setStatus, showError, renderFileSummary, renderAnalyzers, node } from './ui.js';
 import { sniff, readFileBytes, probeImage } from './media.js';
 import { initInput } from './input.js';
 import { getSavedKey, saveKey, clearKey, resolveKey, getMockMode } from './settings.js';
+import { analyze } from './analyzers/index.js';
+import { proxyAvailable } from './analyzers/synthid.js';
 import { SYNTHID_ENABLE_URL, SYNTHID_KEYS_URL } from './config.js';
 
 let current = 0;
@@ -74,6 +76,16 @@ export async function handleFile(file, source) {
     renderFileSummary(media);
     const result = el('result-zone');
     if (result) result.classList.remove('hidden');
+
+    setStatus('Running the provenance checks...');
+    const { key } = resolveKey();
+    const mock = getMockMode();
+    const useProxy = await proxyAvailable();
+    if (token !== current) return;
+    const { results } = await analyze({ media, synthid: { key, mock, useProxy } });
+    if (token !== current) return;
+    setStatus('');
+    renderAnalyzers(el('analyzers-zone'), results);
     return media;
   } catch (error) {
     if (token !== current) return;

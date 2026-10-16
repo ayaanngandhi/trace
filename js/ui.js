@@ -167,3 +167,111 @@ export function renderFileSummary(media) {
     kvList(entries),
   ]));
 }
+
+// ---- check results ----
+
+const SIGNAL_TITLES = {
+  synthid: 'SynthID watermark',
+  synthid_frames: 'SynthID watermark across frames',
+  c2pa: 'C2PA content credentials',
+  metadata: 'Provenance metadata',
+  container: 'Container and stream information',
+};
+
+const STATUS_LABELS = {
+  found: 'Found',
+  absent: 'Absent',
+  inconclusive: 'Inconclusive',
+  not_configured: 'Not configured',
+  skipped: 'Skipped',
+  error: 'Error',
+};
+
+export function signalTitle(signal) {
+  return SIGNAL_TITLES[signal] || signal;
+}
+
+function valueNode(value) {
+  if (value == null) return node('span', { class: 'muted', text: 'not returned' });
+  if (typeof value === 'boolean') return node('span', { class: 'mono', text: value ? 'true' : 'false' });
+  if (typeof value === 'number') return node('span', { class: 'mono num', text: String(value) });
+  if (typeof value === 'string') return node('span', { class: 'mono', text: value });
+  return node('span', { class: 'mono', text: truncate(JSON.stringify(value)) });
+}
+
+function truncate(text, limit = 2000) {
+  const value = String(text == null ? '' : text);
+  return value.length > limit ? value.slice(0, limit) + '...' : value;
+}
+
+function detailsList(details) {
+  const entries = [];
+  for (const [key, value] of Object.entries(details || {})) {
+    if (key === 'raw' || key === 'setup') continue;
+    if (value == null || value === '') continue;
+    entries.push([humanKey(key), valueNode(value)]);
+  }
+  if (!entries.length) return null;
+  return kvList(entries);
+}
+
+function humanKey(key) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
+function setupBlock(details) {
+  const setup = details && details.setup;
+  if (!setup || !setup.enableUrl) return null;
+  const children = [];
+  if (setup.message) children.push(node('p', { class: 'small muted', style: 'margin:0 0 var(--s2)', text: setup.message }));
+  const links = [node('a', { href: setup.enableUrl, target: '_blank', rel: 'noopener noreferrer', text: 'Enable the SynthID API' })];
+  if (setup.keysUrl) {
+    links.push(' then create a key under ');
+    links.push(node('a', { href: setup.keysUrl, target: '_blank', rel: 'noopener noreferrer', text: 'Credentials' }));
+    links.push('.');
+  }
+  children.push(node('p', { class: 'small', style: 'margin:0' }, links));
+  return node('div', { class: 'notice', style: 'margin-top: var(--s3)' }, children);
+}
+
+function rawBlock(details) {
+  if (!details || details.raw == null) return null;
+  const pre = node('pre', { class: 'raw', text: truncate(typeof details.raw === 'string' ? details.raw : JSON.stringify(details.raw, null, 2)) });
+  return node('details', { class: 'disclosure' }, [
+    node('summary', { text: 'Raw response from the source' }),
+    pre,
+  ]);
+}
+
+export function renderAnalyzer(result) {
+  const body = [
+    node('p', { class: 'analyzer-summary', text: result.summary }),
+    node('p', { class: 'meaning', text: result.meaning }),
+  ];
+  const list = detailsList(result.details);
+  if (list) body.push(node('div', { style: 'margin-top: var(--s3)' }, list));
+  const setup = setupBlock(result.details);
+  if (setup) body.push(setup);
+  if (result.caveats && result.caveats.length) {
+    body.push(node('ul', { class: 'caveats' }, result.caveats.map((c) => node('li', { text: c }))));
+  }
+  const raw = rawBlock(result.details);
+  if (raw) body.push(raw);
+
+  const head = node('div', { class: 'analyzer-head' }, [
+    node('h3', { text: signalTitle(result.signal) }),
+    chip(result.status, STATUS_LABELS[result.status] || result.status),
+  ]);
+  return node('div', { class: 'analyzer', dataset: { signal: result.signal, status: result.status } }, [
+    head,
+    node('div', { class: 'analyzer-body' }, body),
+  ]);
+}
+
+export function renderAnalyzers(container, results) {
+  if (!container) return;
+  clear(container);
+  for (const result of results) container.appendChild(renderAnalyzer(result));
+}
