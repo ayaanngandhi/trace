@@ -3,6 +3,7 @@
 
 import { assertResult } from '../contract.js';
 import { analyzeSynthid } from './synthid.js';
+import { analyzeC2pa } from './c2pa.js';
 
 // Run the available checks. `synthid` carries { key, mock, useProxy }.
 export async function analyze({ media, synthid = {} }) {
@@ -17,6 +18,13 @@ export async function analyze({ media, synthid = {} }) {
     key: synthid.key || '',
     mock: synthid.mock || '',
     useProxy: Boolean(synthid.useProxy),
+  }));
+  results.push(await analyzeC2pa({
+    bytes: media.bytes,
+    mime: media.info.mime,
+    kind,
+    size: media.size,
+    name: media.name,
   }));
   for (const result of results) assertResult(result);
   return { results };
