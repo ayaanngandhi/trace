@@ -150,7 +150,7 @@ function buildResult(store, kind) {
     } else if (strongest.classification === 'composite_ai') {
       summary = 'A signed C2PA manifest declares a composite that includes trained algorithmic media.';
     } else if (strongest.classification === 'algorithmic_not_ai') {
-      summary = 'A signed C2PA manifest declares algorithmic media, which is content rendered by an algorithm such as CGI. That is not AI generated content.';
+      summary = 'A signed C2PA manifest declares algorithmic media, which is content rendered by an algorithm such as CGI rather than by a trained model.';
     } else if (strongest.classification === 'synthetic_unknown') {
       summary = strongest.known
         ? 'A signed C2PA manifest declares a synthetic composite. It does not state whether a trained model was used.'

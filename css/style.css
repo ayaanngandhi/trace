@@ -303,13 +303,13 @@ kbd {
 
 /* ---------- data tables ---------- */
 
-.dl { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr; gap: 0; border-top: 1px solid var(--hairline); margin: 0; }
+.dl { display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); gap: 0; border-top: 1px solid var(--hairline); margin: 0; }
 .dl dt {
   font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft);
   padding: var(--s2) var(--s3) var(--s2) 0; border-bottom: 1px solid var(--hairline); font-weight: 600;
 }
-.dl dd { margin: 0; padding: var(--s2) 0; border-bottom: 1px solid var(--hairline); }
-.dl dd .mono { font-size: 0.9rem; }
+.dl dd { margin: 0; padding: var(--s2) 0; border-bottom: 1px solid var(--hairline); overflow-wrap: anywhere; }
+.dl dd .mono { font-size: 0.9rem; overflow-wrap: anywhere; }
 
 table.data { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 table.data th, table.data td { text-align: left; padding: var(--s2) var(--s3); border-bottom: 1px solid var(--hairline); vertical-align: top; }

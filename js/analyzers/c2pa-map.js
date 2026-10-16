@@ -21,7 +21,7 @@ export const DIGITAL_SOURCE_TYPES = {
     classification: 'algorithmic_not_ai',
     contribution: 'none',
     label: 'Algorithmic media',
-    meaning: 'The file declares content rendered by an algorithm, such as procedural art or CGI. This is not AI generated content.',
+    meaning: 'The file declares content rendered by an algorithm, such as procedural art or CGI, rather than by a trained model.',
   },
   compositeSynthetic: {
     classification: 'synthetic_unknown',

@@ -222,7 +222,7 @@ export function notConfiguredResult(kind) {
     meaning: 'A check that did not run is not a clean result. No watermark was read, so nothing about provenance can be concluded from this check.',
     caveats: [
       'A blank result means not checked, never clean.',
-      'Enable the SynthID API for a Google Cloud project at ' + SYNTHID_ENABLE_URL + ', then create an API key under ' + SYNTHID_KEYS_URL + '.',
+      'Enable the SynthID API for a Google Cloud project, then create an API key. The setup links are in the SynthID panel below.',
     ],
   });
 }

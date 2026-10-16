@@ -2,6 +2,7 @@
 // file summary panel. All authored copy is set as text, never as markup.
 
 import { formatBytes, formatDuration } from './media.js';
+import { bestPractice } from './report.js';
 
 export function el(id) {
   return document.getElementById(id);
@@ -274,4 +275,42 @@ export function renderAnalyzers(container, results) {
   if (!container) return;
   clear(container);
   for (const result of results) container.appendChild(renderAnalyzer(result));
+}
+
+// ---- verdict and the authored report ----
+
+export function renderVerdict(report) {
+  const zone = el('verdict-zone');
+  if (!zone) return;
+  clear(zone);
+  const children = [
+    node('p', { class: 'verdict-label', text: 'Verdict' }),
+    node('p', { class: 'verdict-state', text: report.label }),
+    node('p', { class: 'verdict-summary', text: report.meaning }),
+  ];
+  if (report.partial) {
+    children.push(node('div', { style: 'margin-top: var(--s4)' }, [
+      notice('warn', 'This reading is partial', [
+        node('ul', { class: 'caveats' }, report.coverageNotes.map((note) => node('li', { text: note.text }))),
+      ]),
+    ]));
+  }
+  zone.appendChild(node('div', { class: 'verdict', dataset: { verdict: report.level } }, children));
+}
+
+export function renderFindings(report) {
+  const zone = el('findings-zone');
+  if (!zone) return;
+  clear(zone);
+  for (const section of report.sections) {
+    const body = section.paragraphs.map((text) => node('p', { text }));
+    if (section.items && section.items.length) {
+      body.push(node('ul', { class: 'caveats' }, section.items.map((item) => node('li', { text: item }))));
+    }
+    zone.appendChild(node('section', { class: 'finding' }, [node('h2', { text: section.title })].concat(body)));
+  }
+  zone.appendChild(panel([
+    node('p', { class: 'small muted', style: 'margin:0 0 var(--s3)', text: 'The same guidance applies to every file.' }),
+    node('ul', { class: 'caveats' }, bestPractice().map((item) => node('li', { text: item }))),
+  ], { title: 'Best practice' }));
 }
