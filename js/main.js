@@ -1,13 +1,14 @@
 // Trace entry point. Wires the input paths, the settings panel and the analysis
 // pipeline. Every check runs locally or against a source the user configured.
 
-import { el, resetResult, setBusy, setStatus, showError, renderFileSummary, renderAnalyzers, renderVerdict, renderFindings, node } from './ui.js';
+import { el, resetResult, setBusy, setStatus, showError, renderFileSummary, renderAnalyzers, renderVerdict, renderFindings, renderBeforeAfter, node } from './ui.js';
 import { sniff, readFileBytes, probeImage, probeVideo } from './media.js';
 import { initInput } from './input.js';
 import { getSavedKey, saveKey, clearKey, resolveKey, getMockMode } from './settings.js';
 import { analyze } from './analyzers/index.js';
 import { proxyAvailable } from './analyzers/synthid.js';
 import { resolveVerdict } from './report.js';
+import { renderCropTool } from './crop.js';
 import { SYNTHID_ENABLE_URL, SYNTHID_KEYS_URL } from './config.js';
 
 let current = 0;
@@ -100,6 +101,19 @@ export async function handleFile(file, source) {
     renderVerdict(report);
     renderAnalyzers(el('analyzers-zone'), results);
     renderFindings(report);
+    if (info.kind === 'image' || info.kind === 'video') {
+      const cropZone = el('crop-zone');
+      if (cropZone) cropZone.classList.remove('hidden');
+      renderCropTool(media, {
+        onExport: (file, exportMeta) => {
+          handleFile(file, 'the crop tool').then(() => {
+            renderBeforeAfter(exportMeta, file, media);
+            const ba = el('beforeafter-zone');
+            if (ba) ba.classList.remove('hidden');
+          });
+        },
+      });
+    }
     return media;
   } catch (error) {
     if (token !== current) return;

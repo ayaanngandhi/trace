@@ -315,3 +315,35 @@ export function renderFindings(report) {
     node('ul', { class: 'caveats' }, bestPractice().map((item) => node('li', { text: item }))),
   ], { title: 'Best practice' }));
 }
+
+export function renderBeforeAfter(info, outputFile, sourceMedia) {
+  const zone = el('beforeafter-zone');
+  if (!zone) return;
+  if (zone._urls) for (const url of zone._urls) URL.revokeObjectURL(url);
+  zone._urls = [];
+  clear(zone);
+
+  const makeUrl = (blob) => { const url = URL.createObjectURL(blob); zone._urls.push(url); return url; };
+  const sourcePreview = sourceMedia.info.kind === 'image'
+    ? node('img', { src: makeUrl(sourceMedia.file), alt: 'The original file.' })
+    : null;
+  const outputPreview = info.kind === 'image'
+    ? node('img', { src: makeUrl(outputFile), alt: 'The cropped output.' })
+    : node('video', { src: makeUrl(outputFile), muted: true, playsInline: true, controls: true });
+
+  const cell = (label, dims, preview) => node('div', { class: 'ba-cell' }, [
+    node('div', { class: 'ba-head', text: label }),
+    node('div', { class: 'ba-body' }, [preview, node('p', { class: 'small muted', style: 'margin: var(--s2) 0 0', text: dims })]),
+  ]);
+
+  zone.appendChild(node('section', { class: 'section' }, [
+    node('h2', { text: 'Before and after' }),
+    node('p', { class: 'small muted', text: info.kind === 'video'
+      ? 'The exported clip re-encodes through MediaRecorder, which is lossy. The very watermark being checked can degrade. The output was analysed again.'
+      : 'The cropped output was analysed again. The values below come from that run.' }),
+    node('div', { class: 'beforeafter' }, [
+      cell('Source', info.sourceWidth + ' by ' + info.sourceHeight + ' pixels', sourcePreview),
+      cell('Output', info.outputWidth + ' by ' + info.outputHeight + ' pixels', outputPreview),
+    ]),
+  ]));
+}
