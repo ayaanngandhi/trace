@@ -181,6 +181,9 @@ class Handler(BaseHTTPRequestHandler):
         candidate = os.path.normpath(os.path.join(ROOT, rel))
         if candidate != ROOT and not candidate.startswith(ROOT + os.sep):
             return None
+        # Never serve the config file (it can hold the SynthID key) or git internals.
+        if candidate == CONFIG_PATH or candidate.startswith(os.path.join(ROOT, ".git") + os.sep) or candidate == os.path.join(ROOT, ".git"):
+            return None
         if os.path.isdir(candidate):
             candidate = os.path.join(candidate, "index.html")
         return candidate
