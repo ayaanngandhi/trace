@@ -83,8 +83,6 @@ export async function handleFile(file, source) {
     }
     if (token !== current) return;
 
-    setBusy(false);
-    setStatus('');
     renderFileSummary(media);
     const result = el('result-zone');
     if (result) result.classList.remove('hidden');
@@ -96,6 +94,7 @@ export async function handleFile(file, source) {
     if (token !== current) return;
     const { results } = await analyze({ media, synthid: { key, mock, useProxy } });
     if (token !== current) return;
+    setBusy(false);
     setStatus('');
     const report = resolveVerdict(results);
     renderVerdict(report);
