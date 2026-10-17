@@ -1,0 +1,24 @@
+# Trace self-host server, as a systemd user unit.
+#
+# Copy this file into ~/.config/systemd/user/trace.service and adjust the paths
+# if the repository is not at ~/projects/trace. Then:
+#
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now trace.service
+#   loginctl enable-linger "$USER"     # keep it running after you log out
+#
+# See docs/SELF_HOSTING.md for details.
+
+[Unit]
+Description=Trace media provenance inspector (self-host)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projects/trace/selfhost
+ExecStart=/usr/bin/env python3 %h/projects/trace/selfhost/serve.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target
