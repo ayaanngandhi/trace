@@ -80,6 +80,10 @@ node --test tests/
 node tools/check-shell.mjs
 ```
 
+The pure logic runs under `node --test`. The modules that need a DOM, a canvas or
+WebAssembly are covered by `tests.html`, which you open in a browser on a served
+copy of the repository.
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).

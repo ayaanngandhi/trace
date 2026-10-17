@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trace tests, browser checks for the analyser modules</title>
+<meta name="description" content="A browser test page for the Trace modules that need a DOM, a canvas or WebAssembly: C2PA, metadata, image probing and the crop tool.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F2EFE8'/%3E%3Crect x='5' y='5' width='7' height='7' fill='%23A85E22'/%3E%3Cpath d='M5 21h22M5 26h14' stroke='%2316181C' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "highgain": "./vendor/highgain/index.js"
+  }
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="index.html">
+      <span class="rule-dot" aria-hidden="true"></span>
+      <span class="wordmark">Trace</span>
+      <span class="sub">media provenance inspector</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html">Inspect</a>
+      <a href="how.html">How it works</a>
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="tests.html" aria-current="page">Tests</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+
+    <section class="hero">
+      <p class="eyebrow">Test page</p>
+      <h1>Browser checks for the modules that need a browser.</h1>
+      <p class="lede">The pure logic runs under <code>node --test tests/</code> with no dependencies. This page covers the modules that need a DOM, a canvas or WebAssembly: C2PA, metadata reading, image probing and the crop tool. Serve the repository over http and open this page.</p>
+      <hr class="rule">
+    </section>
+
+    <section id="summary-zone" class="section" aria-live="polite">
+      <div class="panel">
+        <div class="panel-body">
+          <p id="summary-text" class="mono" style="margin:0">Running...</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="results-zone" class="section content" aria-label="Test results"></section>
+    <div id="crop-zone" class="section hidden" aria-hidden="true"></div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <div>
+      <p><strong>Trace</strong> is a static site. There is no backend, no build step and no tracking. Your file stays in this browser except when you deliberately configure a SynthID key.</p>
+    </div>
+    <nav aria-label="Footer">
+      <ul class="inline-list">
+        <li><a href="how.html">How it works</a></li>
+        <li><a href="terms.html">Terms of Service</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="tests.html">Tests</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+<script type="module">
+import { sniff, probeImage, formatBytes } from './js/media.js';
+import { validateResult } from './js/contract.js';
+import { validateCrop, validateTrim, renderCropTool } from './js/crop.js';
+import { mapMock, analyzeSynthid } from './js/analyzers/synthid.js';
+import { analyzeC2pa } from './js/analyzers/c2pa.js';
+import { analyzeMetadata } from './js/analyzers/metadata.js';
+import { resolveVerdict } from './js/report.js';
+
+const results = [];
+async function test(name, fn) {
+  try {
+    await fn();
+    results.push({ name, ok: true });
+  } catch (error) {
+    results.push({ name, ok: false, message: error && error.message ? error.message : String(error) });
+  }
+}
+function assert(condition, message) {
+  if (!condition) throw new Error(message || 'assertion failed');
+}
+function assertEqual(actual, expected, message) {
+  if (actual !== expected) throw new Error((message || 'not equal') + ': got ' + JSON.stringify(actual) + ', want ' + JSON.stringify(expected));
+}
+
+async function fixtureBytes(path) {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error('could not fetch ' + path + ' (' + response.status + ')');
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+async function fixtureFile(path, name, type) {
+  const response = await fetch(path);
+  const blob = await response.blob();
+  return new File([blob], name, { type });
+}
+
+// Pure logic, repeated here so this page fails loudly if the shared modules regress.
+await test('sniff recognises JPEG, PNG and rejects prose', () => {
+  assertEqual(sniff(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0])).kind, 'image');
+  assertEqual(sniff(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])).kind, 'image');
+  assertEqual(sniff(new Uint8Array([...('not a media file').slice(0)].map((c) => c.charCodeAt(0)))), null);
+});
+
+await test('crop validation rejects non-integers, zero area, out of bounds and inverted ranges', () => {
+  const bounds = { width: 1920, height: 1080 };
+  assert(!validateCrop({ x: 0, y: 0, width: 10.5, height: 100 }, bounds).ok);
+  assert(!validateCrop({ x: 0, y: 0, width: 0, height: 100 }, bounds).ok);
+  assert(!validateCrop({ x: 1900, y: 0, width: 100, height: 100 }, bounds).ok);
+  assert(validateCrop({ x: 0, y: 0, width: 100, height: 100 }, bounds).ok);
+  assert(!validateTrim({ start: 5, end: 2 }, 10).ok);
+  assert(!validateTrim({ start: 1, end: 1.1 }, 10).ok);
+  assert(validateTrim({ start: 1, end: 3 }, 10).ok);
+});
+
+await test('the SynthID enum mapping covers found, absent, abstained, blocked and error', () => {
+  assertEqual(mapMock('watermarked_google_image', 'image').status, 'found');
+  assertEqual(mapMock('not_watermarked_image', 'image').status, 'absent');
+  assertEqual(mapMock('abstained_low_resolution', 'image').status, 'inconclusive');
+  assertEqual(mapMock('blocked', 'image').status, 'error');
+  assertEqual(mapMock('error_500', 'image').status, 'error');
+  assertEqual(mapMock('watermarked_google_image', 'image').isProof, false, 'a mock is never proof');
+});
+
+await test('with no key the watermark check is not configured, never absent', async () => {
+  const result = await analyzeSynthid({ bytes: new Uint8Array(16), kind: 'image' });
+  assertEqual(result.status, 'not_configured');
+});
+
+let realPhoto;
+await test('probeImage reads the real dimensions of real_photo.jpg', async () => {
+  const file = await fixtureFile('tests/fixtures/real_photo.jpg', 'real_photo.jpg', 'image/jpeg');
+  realPhoto = file;
+  const probe = await probeImage(file);
+  assert(probe.width > 0 && probe.height > 0, 'expected positive dimensions');
+  assertEqual(probe.width, 1816);
+  assertEqual(probe.height, 3295);
+});
+
+await test('metadata reads real_photo.jpg and finds no generator marker', async () => {
+  const bytes = await fixtureBytes('tests/fixtures/real_photo.jpg');
+  const result = await analyzeMetadata({ bytes, mime: 'image/jpeg', kind: 'image' });
+  assertEqual(validateResult(result).length, 0);
+  assertEqual(result.isProof, false);
+  assertEqual(result.details.contribution, 'none');
+});
+
+await test('C2PA verifies c2pa_signed.jpg and classifies algorithmicMedia as not AI', async () => {
+  const bytes = await fixtureBytes('tests/fixtures/c2pa_signed.jpg');
+  const result = await analyzeC2pa({ bytes, mime: 'image/jpeg', kind: 'image' });
+  assertEqual(validateResult(result).length, 0);
+  assertEqual(result.status, 'found');
+  assertEqual(result.isProof, true, 'a signed manifest is authoritative');
+  assertEqual(result.details.classification, 'algorithmic_not_ai');
+  assertEqual(result.details.contribution, 'none');
+});
+
+await test('the verdict from that manifest is not ai_confirmed', async () => {
+  const bytes = await fixtureBytes('tests/fixtures/c2pa_signed.jpg');
+  const c2pa = await analyzeC2pa({ bytes, mime: 'image/jpeg', kind: 'image' });
+  const synthid = mapMock('not_watermarked_image', 'image');
+  const metadata = await analyzeMetadata({ bytes, mime: 'image/jpeg', kind: 'image' });
+  const verdict = resolveVerdict([synthid, c2pa, metadata]);
+  assert(verdict.level !== 'ai_confirmed', 'algorithmicMedia must never confirm AI');
+  assert(verdict.level !== 'ai_probable', 'algorithmicMedia must never be probable AI');
+});
+
+await test('the crop tool renders a box with eight handles', async () => {
+  const file = realPhoto || await fixtureFile('tests/fixtures/real_photo.jpg', 'real_photo.jpg', 'image/jpeg');
+  const zone = document.getElementById('crop-zone');
+  zone.classList.remove('hidden');
+  const media = { file, name: 'real_photo.jpg', size: file.size, info: { kind: 'image', mime: 'image/jpeg' }, width: 1816, height: 3295 };
+  renderCropTool(media, {});
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  const box = zone.querySelector('.crop-box');
+  assert(box, 'expected a crop box');
+  assertEqual(zone.querySelectorAll('.crop-handle').length, 8);
+  assertEqual(box.tabIndex, 0, 'the crop box must be keyboard focusable');
+  zone.classList.add('hidden');
+  zone.replaceChildren();
+});
+
+const list = document.getElementById('results-zone');
+for (const result of results) {
+  const item = document.createElement('p');
+  item.className = 'mono';
+  item.style.margin = '0 0 var(--s2)';
+  item.textContent = (result.ok ? 'PASS  ' : 'FAIL  ') + result.name + (result.ok ? '' : '  -> ' + result.message);
+  item.style.color = result.ok ? '' : 'var(--v-error)';
+  list.appendChild(item);
+}
+const passed = results.filter((r) => r.ok).length;
+const failed = results.length - passed;
+document.getElementById('summary-text').textContent = passed + ' passed, ' + failed + ' failed, ' + results.length + ' total.';
+document.title = (failed ? 'FAIL ' : 'PASS ') + passed + '/' + results.length + ' - Trace tests';
+</script>
+</body>
+</html>
