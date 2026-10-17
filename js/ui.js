@@ -174,6 +174,7 @@ export function renderFileSummary(media) {
 const SIGNAL_TITLES = {
   synthid: 'SynthID watermark',
   synthid_frames: 'SynthID watermark across frames',
+  synthid_audio: 'SynthID watermark in the audio track',
   c2pa: 'C2PA content credentials',
   metadata: 'Provenance metadata',
   container: 'Container and stream information',

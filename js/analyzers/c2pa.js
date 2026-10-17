@@ -191,6 +191,18 @@ export async function analyzeC2pa({ bytes, mime }) {
     reader = await Reader.fromBlob(c2pa, mime, blob);
   } catch (error) {
     const detail = error && error.message ? error.message : String(error);
+    if (/unsupported/i.test(detail)) {
+      return makeResult({
+        signal: 'c2pa',
+        status: 'skipped',
+        summary: 'The official C2PA reader does not support this container, so no manifest was read.',
+        confidence: 'none',
+        isProof: false,
+        details: { reason: 'unsupported_container', container: mime || null, error: detail },
+        meaning: 'C2PA credentials are defined for some containers and not others. This container is not one the reader supports, so this check did not run.',
+        caveats: ['A check that did not run is not a clean result.'],
+      });
+    }
     return inconclusiveResult(
       hasManifestMarker(bytes)
         ? 'A C2PA manifest is present in this file, but the official reader could not parse it.'

@@ -2,7 +2,7 @@
 // pipeline. Every check runs locally or against a source the user configured.
 
 import { el, resetResult, setBusy, setStatus, showError, renderFileSummary, renderAnalyzers, renderVerdict, renderFindings, node } from './ui.js';
-import { sniff, readFileBytes, probeImage } from './media.js';
+import { sniff, readFileBytes, probeImage, probeVideo } from './media.js';
 import { initInput } from './input.js';
 import { getSavedKey, saveKey, clearKey, resolveKey, getMockMode } from './settings.js';
 import { analyze } from './analyzers/index.js';
@@ -68,6 +68,16 @@ export async function handleFile(file, source) {
         media.height = probe.height;
       } catch {
         // Dimensions are a convenience; a decode failure is reported later by the checks.
+      }
+    } else if (info.kind === 'video') {
+      try {
+        const probe = await probeVideo(file);
+        media.width = probe.width;
+        media.height = probe.height;
+        media.duration = probe.duration;
+        media.frameRate = probe.frameRate;
+      } catch {
+        // The frame checks report a decode failure with a clear message.
       }
     }
     if (token !== current) return;

@@ -23,7 +23,7 @@ export function validateResult(result) {
   if (!result.details || typeof result.details !== 'object' || Array.isArray(result.details)) problems.push('details must be an object');
   if (typeof result.meaning !== 'string' || !result.meaning.trim()) problems.push('meaning must be a non-empty string');
   if (!Array.isArray(result.caveats)) problems.push('caveats must be an array');
-  if (result.isProof === true && !['synthid', 'c2pa'].includes(result.signal)) {
+  if (result.isProof === true && !['synthid', 'synthid_frames', 'synthid_audio', 'c2pa'].includes(result.signal)) {
     problems.push('isProof may only be true for the synthid or c2pa signals, got ' + JSON.stringify(result.signal));
   }
   return problems;

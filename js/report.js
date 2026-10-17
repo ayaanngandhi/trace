@@ -55,14 +55,17 @@ export function resolveVerdict(results) {
   const synthid = map.synthid;
   const c2pa = map.c2pa;
   const metadata = map.metadata;
+  const frames = map.synthid_frames;
+  const audio = map.synthid_audio;
   const c2paContribution = c2pa && c2pa.details ? c2pa.details.contribution : null;
   const metaContribution = metadata && metadata.details ? metadata.details.contribution : null;
 
   const evidence = [];
   const push = (result) => evidence.push({ signal: result.signal, text: result.summary });
 
-  if (synthid && synthid.status === 'found' && synthid.isProof) {
-    push(synthid);
+  const watermarkProof = [synthid, frames, audio].filter((r) => r && r.status === 'found' && r.isProof);
+  if (watermarkProof.length) {
+    for (const r of watermarkProof) push(r);
     if (c2pa && c2pa.status === 'found' && c2paContribution === 'ai') push(c2pa);
     return conclude('ai_confirmed', evidence, map);
   }
@@ -77,7 +80,9 @@ export function resolveVerdict(results) {
 
   // A watermark the service reported but that is not a live proof (only seen in
   // mock mode) is partial evidence, never a confirmation.
-  if (synthid && synthid.status === 'found') push(synthid);
+  for (const r of [synthid, frames, audio]) {
+    if (r && r.status === 'found') push(r);
+  }
   if (c2paContribution === 'weak') push(c2pa);
   if (metaContribution === 'weak') push(metadata);
   if (evidence.length) return conclude('ai_possible', evidence, map);

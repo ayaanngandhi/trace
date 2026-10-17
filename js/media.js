@@ -127,6 +127,226 @@ export function probeImage(file) {
   });
 }
 
+// Read what the browser genuinely knows about a video: duration and intrinsic
+// pixel dimensions, plus a measured frame rate when requestVideoFrameCallback
+// is available. No container parsing is faked here.
+export function probeVideo(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    let settled = false;
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      video.removeAttribute('src');
+      URL.revokeObjectURL(url);
+      fn(value);
+    };
+    const timer = setTimeout(() => finish(reject, new Error('The browser did not report video metadata within 15 seconds.')), 15000);
+    video.onloadedmetadata = async () => {
+      const info = {
+        duration: video.duration,
+        width: video.videoWidth,
+        height: video.videoHeight,
+        frameRate: null,
+      };
+      try {
+        info.frameRate = await detectFrameRate(video);
+      } catch {
+        info.frameRate = null;
+      }
+      finish(resolve, info);
+    };
+    video.onerror = () => finish(reject, new Error('The browser could not decode this video container or codec.'));
+    video.src = url;
+  });
+}
+
+// Measure the frame rate by playing muted and reading real presentation times.
+// Resolves null when the browser cannot report frame callbacks.
+function detectFrameRate(video) {
+  return new Promise((resolve) => {
+    if (typeof video.requestVideoFrameCallback !== 'function') {
+      resolve(null);
+      return;
+    }
+    const times = [];
+    let stops = null;
+    const timer = setTimeout(() => stop(), 900);
+    function stop() {
+      clearTimeout(timer);
+      if (typeof video.cancelVideoFrameCallback === 'function' && stops != null) {
+        try { video.cancelVideoFrameCallback(stops); } catch { /* ignore */ }
+      }
+      try { video.pause(); } catch { /* ignore */ }
+      if (times.length < 3) { resolve(null); return; }
+      const deltas = [];
+      for (let i = 1; i < times.length; i += 1) {
+        const d = times[i] - times[i - 1];
+        if (d > 0) deltas.push(d);
+      }
+      if (!deltas.length) { resolve(null); return; }
+      deltas.sort((a, b) => a - b);
+      const median = deltas[Math.floor(deltas.length / 2)];
+      resolve(median > 0 ? 1 / median : null);
+    }
+    const onFrame = (now, metadata) => {
+      times.push(metadata.mediaTime);
+      if (times.length >= 12) { stop(); return; }
+      stops = video.requestVideoFrameCallback(onFrame);
+    };
+    video.requestVideoFrameCallback(onFrame);
+    video.play().catch(() => stop());
+  });
+}
+
+function seekTo(video, time) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const done = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      video.removeEventListener('seeked', onSeeked);
+      fn(value);
+    };
+    const onSeeked = () => done(resolve, time);
+    const timer = setTimeout(() => done(reject, new Error('Seek timed out at ' + time.toFixed(3) + 's.')), 8000);
+    video.addEventListener('seeked', onSeeked);
+    try {
+      video.currentTime = time;
+    } catch (error) {
+      done(reject, error);
+    }
+  });
+}
+
+function canvasToBlob(canvas, type) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('The browser could not export a frame to an image.'));
+    }, type);
+  });
+}
+
+// Sample up to `count` evenly spaced frames by seeking and waiting for a real
+// `seeked` event, then drawing each to a canvas. Frames that fail to decode are
+// skipped rather than hanging the run.
+export async function sampleVideoFrames(file, count = 8) {
+  const url = URL.createObjectURL(file);
+  const video = document.createElement('video');
+  video.preload = 'auto';
+  video.muted = true;
+  video.playsInline = true;
+  const canvas = document.createElement('canvas');
+  const cleanup = () => { video.removeAttribute('src'); URL.revokeObjectURL(url); };
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('The browser did not load the video within 15 seconds.')), 15000);
+      video.onloadedmetadata = () => { clearTimeout(timer); resolve(); };
+      video.onerror = () => { clearTimeout(timer); reject(new Error('The browser could not decode this video codec.')); };
+      video.src = url;
+    });
+    const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+    canvas.width = video.videoWidth || 1;
+    canvas.height = video.videoHeight || 1;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !canvas.width || !canvas.height) throw new Error('The browser reported no video dimensions.');
+
+    const times = [];
+    const total = Math.max(1, Math.min(count, 8));
+    if (duration > 0) {
+      for (let i = 0; i < total; i += 1) {
+        times.push(Math.min(duration - 0.001, duration * ((i + 1) / (total + 1))));
+      }
+    } else {
+      times.push(0);
+    }
+
+    const frames = [];
+    for (const time of times) {
+      try {
+        await seekTo(video, time);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await canvasToBlob(canvas, 'image/png');
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        frames.push({ time, width: canvas.width, height: canvas.height, mime: 'image/png', bytes, blob });
+      } catch {
+        // A single frame that will not decode is skipped, not fatal.
+      }
+    }
+    return frames;
+  } finally {
+    cleanup();
+  }
+}
+
+// Try to decode the audio track of a container to a WAV payload for the SynthID
+// audio check. Returns null when the browser cannot decode it, which is common
+// for codecs it does not ship.
+export async function extractAudioTrack(file) {
+  const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+  if (!AudioContextClass) return null;
+  let context = null;
+  try {
+    const buffer = await file.arrayBuffer();
+    context = new AudioContextClass();
+    const decoded = await context.decodeAudioData(buffer.slice(0));
+    const wav = encodeWav(decoded);
+    return new Blob([wav], { type: 'audio/wav' });
+  } catch {
+    return null;
+  } finally {
+    if (context && typeof context.close === 'function') {
+      try { await context.close(); } catch { /* ignore */ }
+    }
+  }
+}
+
+// Encode an AudioBuffer to a 16-bit PCM WAV payload.
+function encodeWav(audioBuffer) {
+  const channels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const frames = audioBuffer.length;
+  const bytesPerSample = 2;
+  const blockAlign = channels * bytesPerSample;
+  const dataSize = frames * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  const writeString = (offset, text) => {
+    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+  };
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 8 * bytesPerSample, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+  const channelData = [];
+  for (let c = 0; c < channels; c += 1) channelData.push(audioBuffer.getChannelData(c));
+  let offset = 44;
+  for (let i = 0; i < frames; i += 1) {
+    for (let c = 0; c < channels; c += 1) {
+      const sample = Math.max(-1, Math.min(1, channelData[c][i]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+      offset += 2;
+    }
+  }
+  return view;
+}
+
 export function formatBytes(n) {
   if (!Number.isFinite(n)) return '';
   if (n < 1024) return n + ' B';
