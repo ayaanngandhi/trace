@@ -74,9 +74,9 @@ function fromIsoBrand(brand) {
   if (['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'].includes(b)) {
     return { kind: IMAGE, mime: 'image/heic', container: 'HEIF', ext: 'heic' };
   }
-  if (b === 'qt  ') return { kind: VIDEO, mime: 'video/quicktime', container: 'QuickTime', ext: 'mov' };
-  if (['M4A ', 'M4B ', 'F4A ', 'mp4a', 'M4P '].includes(b)) return { kind: AUDIO, mime: 'audio/mp4', container: 'MP4 audio', ext: 'm4a' };
-  if (['isom', 'iso2', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'dash', 'M4V ', 'MSNV', '3gp4', '3gp5', 'mmp4'].includes(b)) {
+  if (b === 'qt') return { kind: VIDEO, mime: 'video/quicktime', container: 'QuickTime', ext: 'mov' };
+  if (['M4A', 'M4B', 'F4A', 'mp4a', 'M4P'].includes(b)) return { kind: AUDIO, mime: 'audio/mp4', container: 'MP4 audio', ext: 'm4a' };
+  if (['isom', 'iso2', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'dash', 'M4V', 'MSNV', '3gp4', '3gp5', 'mmp4'].includes(b)) {
     return { kind: VIDEO, mime: 'video/mp4', container: 'MP4', ext: 'mp4' };
   }
   // Unknown ISO brand. Accepting it as video is reasonable for ftyp containers.
