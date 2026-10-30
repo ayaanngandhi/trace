@@ -4,10 +4,25 @@ A browser-based inspector for AI media provenance. Drop in a photo or a video an
 authoritative sources say about it: the **SynthID watermark**, signed **C2PA content credentials**, and the
 provenance metadata embedded in the file.
 
+**[Open Trace →](https://trace.ayaanngandhi.in)** — or [run it yourself](#running-it): it is a folder of
+files with no build step.
+
 **Nothing is uploaded.** Trace is a static site with no backend. It runs entirely in your browser and your
 files stay on your machine. The one exception is the SynthID check, which sends the file directly from your
 browser to Google's API so the watermark can be read. That request happens only when you supply an API key,
 and it goes straight from your browser to Google with no server in between.
+
+## What it checks
+
+Images, audio and video. Each analyser is a separate module under `js/analyzers/`, and each reports
+individually — one check being unavailable never turns into a silent pass for another.
+
+| Check | Source | Module |
+| --- | --- | --- |
+| **C2PA content credentials** | The signed manifest inside the file, read and verified in the browser | `c2pa.js` |
+| **SynthID watermark** | Google's SynthID API, only when you supply a key | `synthid.js` |
+| **Provenance metadata** | EXIF, XMP, PNG/JPEG chunks — camera, software, edit history | `metadata.js` |
+| **Video container data** | Track and container metadata for files that are not stills | `video.js` |
 
 ## The SynthID check
 
@@ -70,6 +85,10 @@ cp config.example.json config.json
 
 See [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) for running it as a systemd service, putting it behind a
 reverse proxy or tunnel, and keeping your SynthID key on the server instead of in the browser.
+
+On my own LAN it is reached at `192.168.68.129/trace`, a route in
+[Atrium](https://github.com/ayaanngandhi/atrium) — the same small router that fronts every other service on
+that machine. Nothing about Trace changes: Atrium redirects to `:5665` and the browser talks to it directly.
 
 ## Development
 
